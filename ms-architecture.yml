@@ -1,0 +1,87 @@
+- name: Install Ansible Prereqs
+  hosts: tag_role_ms_architecture
+  remote_user: ubuntu
+  gather_facts: no
+  tasks:
+    - raw: "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-minimal python3-pip"
+
+- name: Install Packages
+  hosts: tag_role_ms_architecture
+  remote_user: ubuntu
+  gather_facts: yes
+  tasks:
+    - package:
+        name: "{{item}}"
+        state: latest
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - bridge-utils
+        - cgroup-tools
+        - curl
+        - git
+        - gnupg2
+        - jq
+        - nodejs
+        - npm
+        - fontconfig
+        - openjdk-11-jre
+    - apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+    - apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
+        state: present
+
+- name: Install Docker
+  hosts: tag_role_ms_architecture
+  remote_user: ubuntu
+  gather_facts: yes
+  handlers:
+    - include: roles/handlers/main.yml
+  tasks:
+    - package:
+        name: "docker-ce"
+        state: latest
+    - user: 
+        name: "{{ ansible_ssh_user }}"
+        groups: docker
+        append: yes
+      notify: restart docker
+
+- name: Install kubectl
+  hosts: tag_role_ms_architecture
+  remote_user: ubuntu
+  gather_facts: yes
+  tasks:
+    - apt_key:
+        url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+        state: present
+    - apt_repository:
+        repo: "deb [arch=amd64] https://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+    - package:
+        name: "kubectl"
+        state: latest
+        
+
+- name: Install minikube
+  hosts: tag_role_ms_architecture
+  remote_user: ubuntu
+  gather_facts: yes
+  roles:
+    - gantsign.minikube
+ 
+- name: Install Docker Compose 
+  hosts: tag_role_ms_architecture
+  roles:
+    - andrewrothstein.docker-compose
+
+      #- name: Install Virtualbox
+      #hosts: tag_role_ms_architecture
+      #remote_user: ubuntu
+      #gather_facts: yes
+      #roles:
+      #- buluma.virtualbox
